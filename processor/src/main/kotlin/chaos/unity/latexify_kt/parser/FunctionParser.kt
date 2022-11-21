@@ -1,5 +1,6 @@
 package chaos.unity.latexify_kt.parser
 
+import chaos.unity.latexify_kt.`as`
 import chaos.unity.latexify_kt.ppDataClass
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSFile
@@ -73,7 +74,8 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
 
                 TODO()
             }
-            is Node.Decl.Func.Body.Expr ->  parseExpression(builder, body.expr)
+
+            is Node.Decl.Func.Body.Expr -> parseExpression(builder, body.expr)
         }
     }
 
@@ -84,7 +86,9 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
             is Node.Expr.For -> TODO()
             is Node.Expr.While -> TODO()
             is Node.Expr.BinaryOp -> {
-                when (val op = expr.oper) {
+                val (lhs, op, rhs) = expr
+
+                when (op) {
                     is Node.Expr.BinaryOp.Oper.Infix -> {
                         logger.error("Illegal equation form, binary expression must explicitly have operators")
                         Result.Failure
@@ -120,19 +124,31 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
                             Node.Expr.BinaryOp.Token.DOT -> {
                                 // Dot have different meanings on certain context
                                 // For example: sin(1.0).pow(2)
-                                var result = parseExpression(builder, expr.lhs)
-                                if (result is Result.Failure) return result
-                                result = parseExpression(builder, expr.rhs)
-                                if (result is Result.Failure) return result
+                                var result: Result
+
+                                // Special case:
+                                // If lhs is call, and rhs is call `pow`,
+                                // we put pow in the middle of lhs call's name and args
+                                if (lhs is Node.Expr.Call && rhs is Node.Expr.Call && rhs.expr.`as`<Node.Expr.Name>().name == "pow") {
+                                    result = parseCall(builder, lhs, rhs)
+                                    if (result is Result.Failure) return result
+                                } else {
+                                    result = parseExpression(builder, expr.lhs)
+                                    if (result is Result.Failure) return result
+                                    result = parseExpression(builder, expr.rhs)
+                                    if (result is Result.Failure) return result
+                                }
 
                                 Result.Success(builder)
                             }
+
                             Node.Expr.BinaryOp.Token.DOT_SAFE -> TODO()
                             Node.Expr.BinaryOp.Token.SAFE -> TODO()
                         }
                     }
                 }
             }
+
             is Node.Expr.UnaryOp -> TODO()
             is Node.Expr.TypeOp -> TODO()
             is Node.Expr.DoubleColonRef.Callable -> TODO()
@@ -143,6 +159,7 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
                 builder.append(expr.value)
                 return Result.Success(builder)
             }
+
             is Node.Expr.Brace -> TODO()
             is Node.Expr.Brace.Param -> TODO()
             is Node.Expr.This -> TODO()
@@ -157,43 +174,52 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
             is Node.Expr.Name -> TODO()
             is Node.Expr.Labeled -> TODO()
             is Node.Expr.Annotated -> TODO()
-            is Node.Expr.Call -> {
-                val name = expr.expr as Node.Expr.Name
-
-                when (name.name) {
-                    "sin", "cos", "tan", "cot", "sec", "csc" -> {
-                        builder.append("\\${name.name}")
-
-                        if (expr.args.size != 1) {
-                            logger.error("Illegal equation form, wave function ${name.name} takes 1 argument")
-                            return Result.Failure
-                        }
-
-                        builder.append("({")
-
-                        val result = parseExpression(builder, expr.args.first().expr)
-                        if (result is Result.Failure) return result
-
-                        builder.append("})")
-                    }
-                    "pow" -> {
-                        // pow in kotlin is an extension function
-                        if (expr.args.size != 1) {
-                            logger.error("Illegal equation form, power function ${name.name} takes 1 argument")
-                            return Result.Failure
-                        }
-
-                        builder.append('^')
-                        val result = parseExpression(builder, expr.args.first().expr)
-                        if (result is Result.Failure) return result
-                    }
-                }
-
-                return Result.Success(builder)
-            }
+            is Node.Expr.Call -> parseCall(builder, expr)
             is Node.Expr.ArrayAccess -> TODO()
             is Node.Expr.AnonFunc -> TODO()
             is Node.Expr.Property -> TODO()
         }
+    }
+
+    private fun parseCall(builder: StringBuilder, call: Node.Expr.Call, midExpr: Node.Expr? = null): Result {
+        val name = call.expr as Node.Expr.Name
+        var result: Result
+
+        when (name.name) {
+            "sin", "cos", "tan", "cot", "sec", "csc" -> {
+                builder.append("\\${name.name}")
+
+                if (call.args.size != 1) {
+                    logger.error("Illegal equation form, wave function ${name.name} takes 1 argument")
+                    return Result.Failure
+                }
+
+                if (midExpr != null) {
+                    result = parseExpression(builder, midExpr)
+                    if (result is Result.Failure) return result
+                }
+
+                builder.append("({")
+
+                result = parseExpression(builder, call.args.first().expr)
+                if (result is Result.Failure) return result
+
+                builder.append("})")
+            }
+
+            "pow" -> {
+                // pow in kotlin is an extension function
+                if (call.args.size != 1) {
+                    logger.error("Illegal equation form, power function ${name.name} takes 1 argument")
+                    return Result.Failure
+                }
+
+                builder.append('^')
+                result = parseExpression(builder, call.args.first().expr)
+                if (result is Result.Failure) return result
+            }
+        }
+
+        return Result.Success(builder)
     }
 }
