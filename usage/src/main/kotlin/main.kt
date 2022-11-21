@@ -1,7 +1,6 @@
 import chaos.unity.latexify_kt.annotation.Function
-import kotlin.math.pow
-import kotlin.math.sin
+import kotlin.math.*
 
 @Function
 fun sinc() =
-     sin(1.0).pow(2)
+     2.0.pow(2)

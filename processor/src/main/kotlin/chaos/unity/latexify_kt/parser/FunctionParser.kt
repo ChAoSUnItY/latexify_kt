@@ -98,7 +98,17 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
                         val token = op.token
 
                         when (token) {
-                            Node.Expr.BinaryOp.Token.MUL -> TODO()
+                            Node.Expr.BinaryOp.Token.MUL -> {
+                                var result = parseExpression(builder, expr.lhs)
+                                if (result is Result.Failure) return result
+
+                                builder.append("\\cdot")
+
+                                result = parseExpression(builder, expr.rhs)
+                                if (result is Result.Failure) return result
+
+                                result
+                            }
                             Node.Expr.BinaryOp.Token.DIV -> TODO()
                             Node.Expr.BinaryOp.Token.MOD -> TODO()
                             Node.Expr.BinaryOp.Token.ADD -> TODO()
