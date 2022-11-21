@@ -3,4 +3,4 @@ import kotlin.math.sin
 
 @Function
 fun sinc() =
-    sin(1.0)
+    1.0
