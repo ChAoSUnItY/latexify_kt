@@ -108,7 +108,31 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
             is Node.Expr.Name -> TODO()
             is Node.Expr.Labeled -> TODO()
             is Node.Expr.Annotated -> TODO()
-            is Node.Expr.Call -> TODO()
+            is Node.Expr.Call -> {
+                val name = expr.expr as Node.Expr.Name
+
+                when (name.name) {
+                    "sin" -> {
+                        builder.append("\\sin")
+
+                        if (expr.args.size != 1) {
+                            logger.error("Illegal equation form, wave function sin only takes 1 argument")
+                            return Result.Failure
+                        }
+
+                        builder.append("({")
+
+                        val result = parseExpression(builder, expr.args.first().expr)
+                        if (result is Result.Failure) {
+                            return result
+                        }
+
+                        builder.append("})")
+                    }
+                }
+
+                return Result.Success(builder)
+            }
             is Node.Expr.ArrayAccess -> TODO()
             is Node.Expr.AnonFunc -> TODO()
             is Node.Expr.Property -> TODO()
