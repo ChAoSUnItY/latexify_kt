@@ -83,7 +83,56 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
             is Node.Expr.Try -> TODO()
             is Node.Expr.For -> TODO()
             is Node.Expr.While -> TODO()
-            is Node.Expr.BinaryOp -> TODO()
+            is Node.Expr.BinaryOp -> {
+                when (val op = expr.oper) {
+                    is Node.Expr.BinaryOp.Oper.Infix -> {
+                        logger.error("Illegal equation form, binary expression must explicitly have operators")
+                        Result.Failure
+                    }
+
+                    is Node.Expr.BinaryOp.Oper.Token -> {
+                        val token = op.token
+
+                        when (token) {
+                            Node.Expr.BinaryOp.Token.MUL -> TODO()
+                            Node.Expr.BinaryOp.Token.DIV -> TODO()
+                            Node.Expr.BinaryOp.Token.MOD -> TODO()
+                            Node.Expr.BinaryOp.Token.ADD -> TODO()
+                            Node.Expr.BinaryOp.Token.SUB -> TODO()
+                            Node.Expr.BinaryOp.Token.IN -> TODO()
+                            Node.Expr.BinaryOp.Token.NOT_IN -> TODO()
+                            Node.Expr.BinaryOp.Token.GT -> TODO()
+                            Node.Expr.BinaryOp.Token.GTE -> TODO()
+                            Node.Expr.BinaryOp.Token.LT -> TODO()
+                            Node.Expr.BinaryOp.Token.LTE -> TODO()
+                            Node.Expr.BinaryOp.Token.EQ -> TODO()
+                            Node.Expr.BinaryOp.Token.NEQ -> TODO()
+                            Node.Expr.BinaryOp.Token.ASSN -> TODO()
+                            Node.Expr.BinaryOp.Token.MUL_ASSN -> TODO()
+                            Node.Expr.BinaryOp.Token.DIV_ASSN -> TODO()
+                            Node.Expr.BinaryOp.Token.MOD_ASSN -> TODO()
+                            Node.Expr.BinaryOp.Token.ADD_ASSN -> TODO()
+                            Node.Expr.BinaryOp.Token.SUB_ASSN -> TODO()
+                            Node.Expr.BinaryOp.Token.OR -> TODO()
+                            Node.Expr.BinaryOp.Token.AND -> TODO()
+                            Node.Expr.BinaryOp.Token.ELVIS -> TODO()
+                            Node.Expr.BinaryOp.Token.RANGE -> TODO()
+                            Node.Expr.BinaryOp.Token.DOT -> {
+                                // Dot have different meanings on certain context
+                                // For example: sin(1.0).pow(2)
+                                var result = parseExpression(builder, expr.lhs)
+                                if (result is Result.Failure) return result
+                                result = parseExpression(builder, expr.rhs)
+                                if (result is Result.Failure) return result
+
+                                Result.Success(builder)
+                            }
+                            Node.Expr.BinaryOp.Token.DOT_SAFE -> TODO()
+                            Node.Expr.BinaryOp.Token.SAFE -> TODO()
+                        }
+                    }
+                }
+            }
             is Node.Expr.UnaryOp -> TODO()
             is Node.Expr.TypeOp -> TODO()
             is Node.Expr.DoubleColonRef.Callable -> TODO()
@@ -126,6 +175,17 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
                         if (result is Result.Failure) return result
 
                         builder.append("})")
+                    }
+                    "pow" -> {
+                        // pow in kotlin is an extension function
+                        if (expr.args.size != 1) {
+                            logger.error("Illegal equation form, power function ${name.name} takes 1 argument")
+                            return Result.Failure
+                        }
+
+                        builder.append('^')
+                        val result = parseExpression(builder, expr.args.first().expr)
+                        if (result is Result.Failure) return result
                     }
                 }
 
