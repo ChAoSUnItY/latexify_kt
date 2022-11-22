@@ -109,7 +109,21 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
 
                                 result
                             }
-                            Node.Expr.BinaryOp.Token.DIV -> TODO()
+                            Node.Expr.BinaryOp.Token.DIV -> {
+                                builder.append("\\cfrac {")
+
+                                var result = parseExpression(builder, expr.lhs)
+                                if (result is Result.Failure) return result
+
+                                builder.append("}{")
+
+                                result = parseExpression(builder, expr.rhs)
+                                if (result is Result.Failure) return result
+
+                                builder.append("}")
+
+                                result
+                            }
                             Node.Expr.BinaryOp.Token.MOD -> TODO()
                             Node.Expr.BinaryOp.Token.ADD -> TODO()
                             Node.Expr.BinaryOp.Token.SUB -> TODO()
