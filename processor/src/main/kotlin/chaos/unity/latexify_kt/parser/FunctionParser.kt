@@ -211,12 +211,33 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
 
         when (name.name) {
             "sin", "cos", "tan", "cot", "sec", "csc" -> {
-                builder.append("\\${name.name}")
-
                 if (call.args.size != 1) {
                     logger.error("Illegal equation form, ${name.name} function takes 1 argument")
                     return Result.Failure
                 }
+
+                builder.append("\\${name.name}")
+
+                if (midExpr != null) {
+                    result = parseExpression(builder, midExpr)
+                    if (result is Result.Failure) return result
+                }
+
+                builder.append("({")
+
+                result = parseExpression(builder, call.args[0].expr)
+                if (result is Result.Failure) return result
+
+                builder.append("})")
+            }
+
+            "asin", "acos", "atan", "asinh", "acosh", "atanh" -> {
+                if (call.args.size != 1) {
+                    logger.error("Illegal equation form, ${name.name} function takes 1 argument")
+                    return Result.Failure
+                }
+
+                builder.append("\\mathrm{${name.name}}")
 
                 if (midExpr != null) {
                     result = parseExpression(builder, midExpr)

@@ -3,4 +3,4 @@ import kotlin.math.*
 
 @Function
 fun sinc() =
-     log2(1.0)
+     acos(1.0)
