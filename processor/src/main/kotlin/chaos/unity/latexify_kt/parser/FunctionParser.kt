@@ -214,7 +214,7 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
                 builder.append("\\${name.name}")
 
                 if (call.args.size != 1) {
-                    logger.error("Illegal equation form, wave function ${name.name} takes 1 argument")
+                    logger.error("Illegal equation form, ${name.name} function takes 1 argument")
                     return Result.Failure
                 }
 
@@ -225,7 +225,7 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
 
                 builder.append("({")
 
-                result = parseExpression(builder, call.args.first().expr)
+                result = parseExpression(builder, call.args[0].expr)
                 if (result is Result.Failure) return result
 
                 builder.append("})")
@@ -234,13 +234,61 @@ class FunctionParser(private val logger: KSPLogger, functions: List<KSFunctionDe
             "pow" -> {
                 // pow in kotlin is an extension function
                 if (call.args.size != 1) {
-                    logger.error("Illegal equation form, power function ${name.name} takes 1 argument")
+                    logger.error("Illegal equation form, pow function ${name.name} takes 1 argument")
                     return Result.Failure
                 }
 
                 builder.append('^')
-                result = parseExpression(builder, call.args.first().expr)
+                result = parseExpression(builder, call.args[0].expr)
                 if (result is Result.Failure) return result
+            }
+
+            "log" -> {
+                // log function's 2nd arg is base
+                if (call.args.size != 2) {
+                    logger.error("Illegal equation form, log function ${name.name} takes 2 argument")
+                    return Result.Failure
+                }
+
+                builder.append("\\log _{")
+
+                result = parseExpression(builder, call.args[1].expr)
+                if (result is Result.Failure) return result
+
+                builder.append("} {")
+
+                result = parseExpression(builder, call.args[0].expr)
+                if (result is Result.Failure) return result
+
+                builder.append('}')
+            }
+
+            "log10" -> {
+                if (call.args.size != 1) {
+                    logger.error("Illegal equation form, log10 function ${name.name} takes 1 argument")
+                    return Result.Failure
+                }
+
+                builder.append("\\log {")
+
+                result = parseExpression(builder, call.args[0].expr)
+                if (result is Result.Failure) return result
+
+                builder.append('}')
+            }
+
+            "log2" -> {
+                if (call.args.size != 1) {
+                    logger.error("Illegal equation form, log2 function ${name.name} takes 1 argument")
+                    return Result.Failure
+                }
+
+                builder.append("\\log _{2} {")
+
+                result = parseExpression(builder, call.args[0].expr)
+                if (result is Result.Failure) return result
+
+                builder.append('}')
             }
         }
 

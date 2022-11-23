@@ -3,4 +3,4 @@ import kotlin.math.*
 
 @Function
 fun sinc() =
-     2.0.pow(2)
+     log2(1.0)
